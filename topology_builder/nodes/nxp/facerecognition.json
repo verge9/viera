@@ -1,0 +1,23 @@
+{
+	"category": "service",
+	"name": "facerecognition",
+	"description": "Face recognition app",
+	"properties": {
+		"image": "facerecognition",
+		"version": "1.3.2",
+		"repo": "devops.nxp.com",
+		"require": {
+			"arch": ["arm64"],
+			"os": ["linux"],
+			"hw": [],
+			"rfs": ["ubuntu1604"]
+		},
+                "input": ["datastreamer"],
+                "output": ["datastreamer"],
+                "cmd": "/bin/facerecognition"
+	},
+	"icon": "facerecog.jpg",
+	"input": true,
+	"output": true
+}
+

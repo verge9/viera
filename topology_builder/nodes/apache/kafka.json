@@ -1,0 +1,23 @@
+{
+	"category": "service",
+	"name": "kafka",
+	"description": "Convert camera video to data stream to kafka",
+        "type": "datastreamer",
+	"properties": {
+		"image": "kafka",
+		"version": "1.3.2",
+		"repo": "devops.nxp.com",
+		"require": {
+			"arch": ["x86"],
+			"os": ["linux"],
+			"hw": [],
+			"rfs": ["ubuntu1604"]
+		},
+                "port": 9092,
+                "cmd": "/bin/kafka"
+	},
+	"icon": "kafka.jpg",
+	"input": false,
+	"output": false
+}
+

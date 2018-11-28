@@ -1,0 +1,21 @@
+{
+	"category": "device",
+	"name": "ip_camera",
+	"description": "IP Camera",
+        "type": "camera",
+        "properties": {
+                "require": {
+                    "ip": "",
+                    "user": "",
+                    "pw": "",
+                    "format": "H264",
+                    "protocol": "rtsp",
+                    "resolution": "640x480",
+                    "appendix": "/h264/ch1/sub/av_stream"
+                },
+                "accesspoint": "getURL"
+        },
+        "icon": "ip_camera.jpg",
+        "input": false,
+        "output": true
+}

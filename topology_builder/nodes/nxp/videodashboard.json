@@ -1,0 +1,22 @@
+{
+	"category": "service",
+	"name": "videodashboard",
+	"description": "The dashboard playing video with face recognition",
+	"properties": {
+		"image": "videodashboard",
+		"version": "1.3.2",
+		"repo": "devops.nxp.com",
+		"require": {
+			"arch": ["x86"],
+			"os": ["linux"],
+			"hw": [],
+			"rfs": ["ubuntu1604"]
+		},
+		"input": ["datastreamer"],
+                "cmd": "python WebApp.py"
+	},
+	"icon": "videodashboard.jpg",
+	"input": true,
+	"output": false
+}
+
