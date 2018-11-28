@@ -40,8 +40,8 @@ Solution:
         format: H264
         resolution:  640x480
         protocol: rtsp
-        user: admin
-        pw: a12345678
+        user: xxxx
+        pw: xxxxxxxx
         appendix: /h264/ch1/sub/av_stream
  
     DataStreamer:
