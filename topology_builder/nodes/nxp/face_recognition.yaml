@@ -1,0 +1,97 @@
+face_recognition:
+  description:
+    type: string
+    value: "Face recognition service that streamlizes video frames from IP Camera or stream database Kafka
+           Input: <Videostream>
+           Output: <Videostream>"
+  serviceid:
+    type: integer
+  category:
+    type: string 
+  role: service
+  Input:   #define service input and it will be used to check link type
+    name:
+      type: option <VideoSource/Featuredb/Videostream>
+      value: {{ interface.Input.name }}
+    VideoSource:
+      StreamID:
+        type: string  < RTSP/HTTP/Video# (usb/cspi)>
+        value: {{ previous.protocol if interface.Input.name == "VideoSource" }}
+      Resolution:
+        type: string  <1920x1080 or 1280x720 or 640x480>
+        value: {{ previous.resolution if interface.Input.name == "VideoSource" }}
+      Video format:
+        type: string  <H264/MPEG4/AVC/Rawdata>
+        value: {{ previous.format if interface.Input.name == "VideoSource" }}
+      username:  #optional, only for IP camera which need username and password
+        type: string
+        value: {{ previous.username if interface.Input.name == "VideoSource" }}
+      password:  #optional, only for IP camera which need username and password
+        type: string
+        value: {{ previous.password if interface.Input.name == "VideoSource" }}
+      url:
+        type: string
+        value: {{ previous.url if interface.Input.name == "VideoSource" }}
+    Featuredb:
+      DB_name:
+        type: string
+        value: {{ previous.name if interface.Input.name == "Featuredb" }}
+      DB_address:
+        type: string  <remote or local db server address>
+        value: {{ previous.address if interface.Input.name == "Featuredb" }}
+      DB_admin_username:
+        type: string
+        value: {{ previous.admin_username if interface.Input.name == "Featuredb" }}
+      DB_admin_password: 
+        type: string <Token or username/password>
+        value: {{ previous.admin_password if interface.Input.name == "Featuredb" }}
+    Videostream:
+      Broker_IP:
+        type: string
+        value: {{ previous.device.local_ip if interface.Input.name == "Videostream" }}
+      Broker_Port:
+        type: integer
+        value: {{ previous.service_port if interface.Input.name == "Videostream" }}
+      TopicID:
+        type: string
+        value: {{ previous["topics"]["Consumer"][interface.id]["topic"] if interface.Input.name == "Videostream" }}
+      PartitionID: 
+        type: integer <kafka partition id>
+        value: {{ previous["topics"]["Consumer"][interface.id]["partition_id"] if interface.Input.name == "Videostream" }}
+  Output:
+    name:
+      type: option <Videostream/TSN port>
+      value: {{ interface.Output.name }}
+    Videostream:
+      Broker_IP:
+        type: string
+        value: {{ next.ip if interface.Output.name == "Videostream" }}
+      Broker_Port:
+        type: integer
+        value: {{ next.port if interface.Output.name == "Videostream" }}
+      TopicID:
+        type: string
+        value: {{ next["topics"]["Producer"][interface.id]["topic"] if interface.Output.name == "Videostream" }}
+      PartitionID: 
+        type: integer <kafka partition id>
+        value: {{ next["topics"]["Producer"][interface.id]["partition_id"] if interface.Output.name == "Videostream" }}
+  Compatability:
+    arch: arm64
+    os: linux
+    rfs: ubuntu1604
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: deploy_manage_facerecognize
+    container_name: face_recognition
+    hostname: face_recognition
+    version: v1.0
+    repo : devops.nxp.com
+    environment:
+    -
+      name: SERVICE_PARAMETERS
+      value:
+        input: current.Input
+        output: current.Output
+    command: "/bin/facerecognition"
+  security: 
+    service_token: 
+    type: string <token or username/password> 

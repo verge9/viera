@@ -1,0 +1,31 @@
+kafka:
+  description:
+    type: string
+    value: data streamer
+  serviceid:
+    type: integer
+  category:
+    type: string 
+  role: service
+  service_port:
+    type: integer
+    value: 9092
+  topics:
+    Producer: {{ interface.topics.Producer }}
+    Consumer: {{ interface.topics.Consumer }}
+  Compatability:
+    arch: arm64
+    os: linux
+    rfs: ubuntu1604
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: kafka
+    container_name: kafka
+    hostname: kafka
+    version: broker
+    repo : devops.nxp.com
+    environment:
+    command: "cd ~/kafka/kafka_2.11-2.0.0 && bin/kafka-server-start.sh  config/server.properties &"
+
+  security: 
+    service_token: 
+    type: string <token or username/password> 

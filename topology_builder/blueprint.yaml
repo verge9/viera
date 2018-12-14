@@ -1,0 +1,41 @@
+Solution:
+    name: smart_home
+    id: a_random_alphabeit_string_generated_by_system
+    version: v1
+    blocks:
+        camera_1:
+            type: VideoSource
+            class: nxp.ip_camera
+            # Empty means to query device from database
+            deviceid: ""
+
+        kafka_1:
+            type: Videostream
+            class: apache.kafka
+            Topics:
+                Producer:
+                    video_ingestion_1:
+                        topic: ingest
+                        partition_id: 0
+                    face_recognition_1:
+                        topic: recognition
+                        partition_id: 0
+                Consumer:
+                    face_recognition_1:
+                        topic: ingest
+                        partition_id: 0
+            deviceid: ""
+
+                    
+        video_ingestion_1:
+            class: nxp.video_ingestion
+            Source: camera_1
+            Target: kafka_1
+            deviceid: ""
+
+        face_recognition_1:
+            class: nxp.face_recognition
+            Source: kafka_1
+            Target: kafka_1
+            deviceid: ""
+
