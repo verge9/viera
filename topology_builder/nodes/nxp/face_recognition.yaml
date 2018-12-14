@@ -91,7 +91,7 @@ face_recognition:
       value:
         input: current.Input
         output: current.Output
-    command: "/bin/facerecognition"
+    command: "cd /root/test && python ./demo1.py"
   security: 
     service_token: 
     type: string <token or username/password> 
