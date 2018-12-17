@@ -1,18 +1,18 @@
 kafka:
-  description:
-    type: string
-    value: data streamer
-  serviceid:
-    type: integer
-  category:
-    type: string 
+  description: "data streamer"
+  serviceid: this_is_allocated_id_for_this_service
+  category: VideoStream
   role: service
   service_port:
     type: integer
     value: 9092
   topics:
-    Producer: {{ interface.topics.Producer }}
+    Producer: 
+      type: kafka_msg
+      value: {{ interface.topics.Producer }}
     Consumer: {{ interface.topics.Consumer }}
+      type: kafka_msg
+      value: {{ interface.topics.Producer }}
   Compatability:
     arch: arm64
     os: linux
@@ -25,7 +25,12 @@ kafka:
     repo : devops.nxp.com
     environment:
     command: "cd ~/kafka/kafka_2.11-2.0.0 && bin/kafka-server-start.sh  config/server.properties &"
-
   security: 
     service_token: 
     type: string <token or username/password> 
+  define:
+    kafka_msg:
+      topic:
+        type: string
+      partition:
+        type: integer 

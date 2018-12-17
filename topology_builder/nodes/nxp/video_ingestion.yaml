@@ -1,13 +1,9 @@
 video_ingestion:
-  description:
-    type: string
-    value: "Face ingestion service that streamlizes video frames from IP Camera or stream database Kafka
+  description: "Face ingestion service that streamlizes video frames from IP Camera or stream database Kafka
            Input: <VideoSource/Featuredb/Videostream>
            Output: <Videostream>"
-  serviceid:
-    type: integer
-  category:
-    type: string 
+  serviceid: system_wide_unique_id
+  category: IIoT 
   role: service
   Input:   #define service input and it will be used to check link type
     name:

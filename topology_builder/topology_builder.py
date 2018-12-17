@@ -113,6 +113,29 @@ class TopologyBlock(object):
         print "------------"
         return True
 
+
+devmgmt_ip = '10.192.208.133'
+devmgmt_port = 5000
+
+def get_deploy_point():
+    url = 'http://{}:{}/vg9/endpoint/deployment'.format(devmgmt_ip, devmgmt_port)
+    r = requests(url)
+    if r.status_code != 200:
+        return None
+    else:
+        return json.loads(r.content)['endpoint']
+
+def deploy_service(data):
+    url = get_deploy_point()
+    if url is None:
+        print "Fail to get deploy endpoint."
+        return False
+    payload = data
+    headers = {'content-type': 'application/json'}
+    r = requests.post(url, data=json.dumps(payload), headers=headers, \
+                      cert=('server.pem','server-key.pem'), verify=False)
+
+
 # service orchestrator template
 so_template = {}
 def so_add_service(name, cmd, params, image, repo, version, target):
@@ -146,9 +169,6 @@ def so_add_service(name, cmd, params, image, repo, version, target):
     service["spec"] = spec
     so_template[name] = service
  
-devmgmt_ip = '10.192.208.133'
-devmgmt_port = 5000
-
 def devmgmt_query(url, require):
     if 'deviceid' in require:
         devices = json.loads(requests.get(url, data = require).content)
