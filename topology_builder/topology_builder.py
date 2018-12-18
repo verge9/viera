@@ -126,6 +126,12 @@ def get_deploy_point():
         return json.loads(r.content)['endpoint']
 
 def deploy_service(data):
+    global ca_cert
+    global ca_key
+
+    ca_cert = 'server.pem'
+    ca_key = 'server-key.pem'
+
     url = get_deploy_point()
     if url is None:
         print "Fail to get deploy endpoint."
@@ -133,8 +139,12 @@ def deploy_service(data):
     payload = data
     headers = {'content-type': 'application/json'}
     r = requests.post(url, data=json.dumps(payload), headers=headers, \
-                      cert=('server.pem','server-key.pem'), verify=False)
-
+                      cert=(ca_cert, ca_key), verify=False)
+    if r.status_code not in [200, 201]:
+        print "Fail to send deployment request."
+        print r.content
+        return False
+    return True
 
 # service orchestrator template
 so_template = {}
@@ -259,9 +269,6 @@ def init_service(block, blockinfo):
                        docker_info['image'], docker_info['repo'], \
                        docker_info['version'], target['name'])
     
-    with open('output.json', 'w') as f:
-        json.dump(so_template, f, indent=4)
-    
     return True
 
 def init_device(block, blockinfo):
@@ -324,6 +331,17 @@ if __name__ == '__main__':
             break
         block_info['instance'] = block
 
-    with open('output.yaml', 'w') as f:
-        yaml.dump(bp_yaml, f)
+    with open('output.json', 'w') as f:
+        json.dump(so_template, f, indent=4)
+
+    for service_name in so_template:
+        service = so_template(service_name)
+        ret = deploy_service(service)
+        if ret:
+            print "Succeeded to deploy service %s." % service_name
+        else:
+            print "Fail to deploy servcie %s." % service_name
+
+    #with open('output.yaml', 'w') as f:
+    #    yaml.dump(bp_yaml, f)
 

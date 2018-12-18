@@ -1,17 +1,17 @@
 face_recognition:
-  description:
-    type: string
-    value: "Face recognition service that streamlizes video frames from IP Camera or stream database Kafka
-           Input: <Videostream>
-           Output: <Videostream>"
-  serviceid:
-    type: integer
-  category:
-    type: string 
+  description: "Face recognition service that streamlizes video frames from IP Camera or stream database Kafka
+                Input: <Videostream>
+                Output: <Videostream>"
+  serviceid: unique_id
+  category: "" 
   role: service
   Input:   #define service input and it will be used to check link type
     name:
-      type: option <VideoSource/Featuredb/Videostream>
+      type: option
+      choice:
+      - VideoSource
+      - Featuredb
+      - Videostream
       value: {{ interface.Input.name }}
     VideoSource:
       StreamID:
@@ -60,7 +60,10 @@ face_recognition:
         value: {{ previous["topics"]["Consumer"][interface.id]["partition_id"] if interface.Input.name == "Videostream" }}
   Output:
     name:
-      type: option <Videostream/TSN port>
+      type: option
+      choice:
+      - Videostream
+      - TSN port
       value: {{ interface.Output.name }}
     Videostream:
       Broker_IP:
@@ -86,8 +89,7 @@ face_recognition:
     version: v1.0
     repo : devops.nxp.com
     environment:
-    -
-      name: SERVICE_PARAMETERS
+    - name: SERVICE_PARAMETERS
       value:
         input: current.Input
         output: current.Output

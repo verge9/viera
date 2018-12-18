@@ -7,11 +7,25 @@ kafka:
     type: integer
     value: 9092
   topics:
-    Producer: 
-      type: kafka_msg
+    Producer:
+      type: dict
+      key:
+        type: string
+      properties:
+        topic:
+          type: string
+        partition:
+          type: integer
       value: {{ interface.topics.Producer }}
     Consumer: {{ interface.topics.Consumer }}
-      type: kafka_msg
+      type: dict
+      key:
+        type: string
+      properties:
+        topic:
+          type: string
+        partition:
+          type: integer
       value: {{ interface.topics.Producer }}
   Compatability:
     arch: arm64
@@ -34,3 +48,4 @@ kafka:
         type: string
       partition:
         type: integer 
+

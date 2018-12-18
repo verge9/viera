@@ -1,13 +1,17 @@
 video_ingestion:
   description: "Face ingestion service that streamlizes video frames from IP Camera or stream database Kafka
-           Input: <VideoSource/Featuredb/Videostream>
-           Output: <Videostream>"
+               Input: <VideoSource/Featuredb/Videostream>
+               Output: <Videostream>"
   serviceid: system_wide_unique_id
   category: IIoT 
   role: service
   Input:   #define service input and it will be used to check link type
     name:
-      type: option <VideoSource/Featuredb/Videostream>
+      type: option
+      choice:
+      - VideoSource
+      - Featuredb
+      - Videostream
       value: {{ interface.Input.name }}
     VideoSource:
       StreamID:
@@ -57,7 +61,10 @@ video_ingestion:
 
   Output:
     name:
-      type: option <Videostream/TSN port>
+      type: option
+      choice:
+      - Videostream
+      - TSN port
       value: {{ interface.Output.name }}
     Videostream:
       Broker_IP:
@@ -83,11 +90,10 @@ video_ingestion:
     version: v1.0
     repo : devops.nxp.com
     environment:
-    -
-      name: SERVICE_PARAMETERS
+    - name: SERVICE_PARAMETERS
       value:
-        "input": current.Input
-        "output": current.Output
+        input: current.Input
+        output: current.Output
     command: "/home/root/ncnn-face-recon-imx8_m1/build/facedetect"
   security: 
       service_token: 
