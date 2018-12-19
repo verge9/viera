@@ -34,7 +34,7 @@ Solution:
                 arch: arm64
                 os: linux
                 rfs: ubuntu1604
-            deviceid: ""
+            deviceid: 35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp
         video-ingestion-1:
             role: service
             class: nxp.video_ingestion

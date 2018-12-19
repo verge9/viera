@@ -59,6 +59,8 @@ class TopologyBlock(object):
 
     def assignDevice(self, device):
         self.device = device
+        if self.id == 'kafka-1':
+            self.device['local_ip'] = '10.193.20.94'
 
     def render_template(self):
         #print self.template_path
@@ -147,7 +149,7 @@ devmgmt_port = 5000
 
 def get_deploy_point():
     url = 'http://{}:{}/vg9/endpoint/deployment'.format(devmgmt_ip, devmgmt_port)
-    r = requests(url)
+    r = requests.get(url)
     if r.status_code != 200:
         return None
     else:
@@ -208,13 +210,21 @@ def so_add_service(name, cmd, params, image, repo, version, target):
     so_template[name] = service
  
 def devmgmt_query(url, require):
+    '''
     if 'deviceid' in require:
         devices = json.loads(requests.get(url, data = require).content)
     else:
         devices = json.loads(requests.get(url, data = require).content)
-    if 'code' in devices and devices['code'] == 0:
-        return devices['items']
-    return None
+    '''
+    devices = json.loads(requests.get(url, data = require).content)
+    if 'code' not in devices or devices['code'] != 0:
+        return None
+    if 'deviceid' in require:
+        for dev in devices['items']:
+            # get required board
+            if 'name' in dev and dev['name'] == require['deviceid']:
+                return [dev]
+    return devices['items']
 
 def query_devices(type, require):
     url = 'http://{}:{}/vg9/lowend/{}'.format(devmgmt_ip, devmgmt_port, type)
@@ -377,15 +387,18 @@ if __name__ == '__main__':
     with open('output.json', 'w') as f:
         json.dump(so_template, f, indent=4)
 
-    '''
     for service_name in so_template:
-        service = so_template(service_name)
+        service = so_template[service_name]
+        '''
+        print "=========deploy %s=========" % service_name
+        print service
+        print "================================"
+        '''
         ret = deploy_service(service)
         if ret:
             print "Succeeded to deploy service %s." % service_name
         else:
             print "Fail to deploy servcie %s." % service_name
-    '''
 
     #with open('output.yaml', 'w') as f:
     #    yaml.dump(bp_yaml, f)

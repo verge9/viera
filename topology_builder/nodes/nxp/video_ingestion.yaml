@@ -60,7 +60,7 @@ video_ingestion:
       value:
         input: current.Input
         output: current.Output
-    command: "/home/root/ncnn-face-recon-imx8_m1/build/facedetect"
+    command: "cd /home/root/ncnn-face-recon-imx8_m2/build/ && ./facedetect"
   security: 
       service_token: 
       type: string <token or username/password> 
