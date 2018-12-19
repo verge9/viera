@@ -5,7 +5,8 @@ kafka:
   role: service
   service_port:
     type: integer
-    value: 9092
+    value: {{ interface.service_port }}
+    default: 9092
   topics:
     Producer:
       type: dict
@@ -16,8 +17,10 @@ kafka:
           type: string
         partition:
           type: integer
+        group:
+          type: string
       value: {{ interface.topics.Producer }}
-    Consumer: {{ interface.topics.Consumer }}
+    Consumer: 
       type: dict
       key:
         type: string
@@ -26,7 +29,9 @@ kafka:
           type: string
         partition:
           type: integer
-      value: {{ interface.topics.Producer }}
+        group:
+          type: string
+      value: {{ interface.topics.Consumer }}
   Compatability:
     arch: arm64
     os: linux

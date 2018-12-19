@@ -2,16 +2,37 @@ import json, yaml, jinja2
 import requests
 import os, re
 
+def trim_prototype(node, key=None):
+    if type(node) != type({}) or node == {}:
+        return
+
+    if key is None:
+        for k in node:
+            trim_prototype(node, k)
+    else:
+        #print "---------begin---------"
+        #print "key %s" % key
+        if type(node[key]) is not type({}):
+            return
+        if 'value' in node[key]:
+            #print "there is value in %s" % key
+            #print node
+            node[key] = node[key]['value']
+            #print node
+            return
+        trim_prototype(node[key])
+
 class TopologyBlock(object):
-    def __init__(self, block_id, block_class):
+    def __init__(self, block_id, block_interface):
         self.id = block_id
-        self.block_class = block_class
+        self.block_class = block_interface['class']
         #self.attribute = None
         self.template = None
         self.previous = None
-        self.next = None
+        self.successor = None
         self.device = None
         self.hardware = None
+        self.properties = block_interface
         self.__initialize()
 
     def __load_block_property(self):
@@ -28,17 +49,9 @@ class TopologyBlock(object):
         #self.type = info['type']
         self.template_path = 'nodes/' + self.block_class.replace('.', '/') + '.yaml'
         # used for composer
-        self.properties = self.__load_block_property()
-        block_name = self.properties.keys()[0]
-        self.properties = self.properties.values()[0]
+        block_name = self.block_class.split('.')[-1]
         self.properties['name'] = block_name
         self.properties['id'] = self.id
-        if self.id == 'video_ingestion_1':
-            self.properties['Input']['name'] = 'VideoSource'
-            self.properties['Output']['name'] = 'Videostream'
-        if self.id == 'face_recognition_1':
-            self.properties['Input']['name'] = 'Videostream'
-            self.properties['Output']['name'] = 'Videostream'
         #print self.properties
         if 'Compatability' in self.properties:
             self.hardware = self.properties['Compatability']
@@ -55,6 +68,7 @@ class TopologyBlock(object):
         env = jinja2.Environment(loader=loader)
         template = env.get_template(fn)
      
+        '''
         print '========='
         print self.device
         print '========='
@@ -62,55 +76,69 @@ class TopologyBlock(object):
         print '========='
         print self.previous
         print '========='
-        print self.next
+        print self.successor
         print '========='
-        '''
         try:
             str_template = template.render(device=self.device, \
                                            interface=self.properties, \
                                            previous=self.previous, \
-                                           next=self.next)
+                                           successor=self.successor)
             self.template = yaml.load(str_template).values()[0]
         except Exception, e:
             print "Fail to render template %s" % self.template_path
             print e.message
             return False
-        '''
         print "+++++++++++++++"
         print dir(self.previous)
         print "+++++++++++++++"
+        '''
         str_template = template.render(device=self.device, \
                                        interface=self.properties, \
                                        previous=self.previous, \
-                                       next=self.next)
+                                       successor=self.successor)
         self.template = yaml.load(str_template).values()[0]
+        trim_prototype(self.template)
+        str_template = yaml.dump(self.template)
+        '''
         print "========="
         print str_template
         print self.template
         print "========="
+        '''
+
         matches = re.findall('current\.[\w\.]+', str_template)
-        if matches is []:
-            # No inner reference found
+        #print matches
+        # No inner reference found
+        if matches == []:
+            # assign device at last
+            self.template['device'] = self.device
             return True
         # there is inner reference need replacing
         for m in matches:
-            keys = m.split('.')[1:] # skip first 'current'
+            keys = m.split('.')[1:] # skip beginning 'current'
             value = self.template
             for key in keys:
                 value = value[key]
             # only replace first match
+            '''
             print '***********************'
             print "match %s" % m
             print value
+            print yaml.dump(value)
+            print json.dumps(value)
             print '***********************'
-            str_template = re.sub(m, '"{}"'.format(yaml.dump(value)), str_template, count = 1)
-        print str_template
-        self.template = yaml.load(str_template).values()[0]
-        self.template['device'] = self.device
+            '''
+            #str_template = re.sub(m, '"{}"'.format(yaml.dump(value)), str_template, count = 1)
+            str_template = re.sub(m, '{}'.format(json.dumps(value)), str_template, count = 1)
+        self.template = yaml.load(str_template)
+        '''
         print "-----------"
         print str_template
+        print "-----------"
         print self.template
         print "------------"
+        '''
+        self.template['device'] = self.device
         return True
 
 
@@ -142,7 +170,7 @@ def deploy_service(data):
                       cert=(ca_cert, ca_key), verify=False)
     if r.status_code not in [200, 201]:
         print "Fail to send deployment request."
-        print r.content
+        #print r.content
         return False
     return True
 
@@ -159,7 +187,7 @@ def so_add_service(name, cmd, params, image, repo, version, target):
                            "namespace": "default"}
     containers = []
     envs = []
-    print params
+    #print params
     if type(params) == type([]):
         for item in params:
             envs.append({'name':item['name'], 'value':json.dumps(item['value'])})
@@ -190,6 +218,7 @@ def devmgmt_query(url, require):
 
 def query_devices(type, require):
     url = 'http://{}:{}/vg9/lowend/{}'.format(devmgmt_ip, devmgmt_port, type)
+    #print url
     return devmgmt_query(url, require)
 
 def query_boards(require):
@@ -237,7 +266,7 @@ def init_service(block, blockinfo):
         if prop == 'Source':
             block.previous = dep_block['instance'].template
         if prop == 'Target':
-            block.next = dep_block['instance'].template
+            block.successor = dep_block['instance'].template
 
     while True:
         if 'deviceid' in blockinfo and blockinfo['deviceid'] != "":
@@ -245,22 +274,30 @@ def init_service(block, blockinfo):
         else:
             devices = query_boards(block.hardware)
         # No device
-        if devices == None:
+        if devices == None or devices == []:
             break
+        #print devices
         target = devices[0]
         # Fail to reserve device, need updating
         if not reserve_boards(target['name']):
             continue
         # Succeed to reserve device
         break
-    if devices == None:
+    if devices == None or devices == []:
         print "No available device for service."
         return False
     block.assignDevice(target)
     blockinfo['status'] = 'init'
 
     if block.id == 'kafka_1':
-        block.properties['topics'] = blockinfo['Topics']
+        block.properties['topics'] = blockinfo['topics']
+        '''
+        print '--------------------'
+        print block.properties['topics']
+        print blockinfo['topics']
+        print '--------------------'
+        '''
+
 
     if block.render_template():
         #print block.template
@@ -273,10 +310,16 @@ def init_service(block, blockinfo):
 
 def init_device(block, blockinfo):
     print "init device id %s" % block.id
+    #print block.properties
     if 'deviceid' in blockinfo and blockinfo['deviceid'] != "":
-        dev = query_devices(block.properties['name'], require={'deviceid':blockinfo['deviceid']})[0]
+        dev = query_devices(block.properties['name'], require={'deviceid':blockinfo['deviceid']})
     else:
-        dev = query_devices(block.properties['name'], require={'count':1})[0]
+        dev = query_devices(block.properties['name'], require={'count':1})
+    if dev is None or dev == []:
+        print "Can not find device of %s." % block.id
+        return False
+    # Use first one
+    dev = dev[0]
     block.assignDevice(dev)
     ret = block.render_template()
     if block.render_template():
@@ -288,7 +331,7 @@ def init_device(block, blockinfo):
 
 
 def init_block(block_id, blockinfo):
-    block = TopologyBlock(block_id, blockinfo['class'])
+    block = TopologyBlock(block_id, blockinfo)
     if block.role == 'service':
         ret = init_service(block, blockinfo)
     elif block.role == 'device':
@@ -334,6 +377,7 @@ if __name__ == '__main__':
     with open('output.json', 'w') as f:
         json.dump(so_template, f, indent=4)
 
+    '''
     for service_name in so_template:
         service = so_template(service_name)
         ret = deploy_service(service)
@@ -341,6 +385,7 @@ if __name__ == '__main__':
             print "Succeeded to deploy service %s." % service_name
         else:
             print "Fail to deploy servcie %s." % service_name
+    '''
 
     #with open('output.yaml', 'w') as f:
     #    yaml.dump(bp_yaml, f)

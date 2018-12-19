@@ -1,0 +1,19 @@
+---
+ipcamera:
+  description: specification for ip camera
+  category: <EdgeIntelligence or IIoT or SmartHome>
+  role: device
+  protocol: {{ device.attr.protocol }}
+  resolution: {{ device.attr.resolution }}
+  format: {{ device.attr.format }}
+  encode:
+    type: option
+    choice:
+    - Rawdata
+    - jpg
+    - png
+    value: {{ interface.encode }}
+    default: jpg
+  username: {{ device.attr.user }}
+  password: {{ device.attr.pw }}
+  url: {{ "{}://{}:{}@{}/{}".format(device.attr.protocol, device.attr.user, device.attr.pw, device.attr.ip, device.attr.appendix) }}

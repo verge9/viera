@@ -3,39 +3,64 @@ Solution:
     id: a_random_alphabeit_string_generated_by_system
     version: v1
     blocks:
-        camera_1:
+        camera-1:
+            role: device
             type: VideoSource
-            class: nxp.ip_camera
+            class: nxp.ipcamera
+            encode: jpg
             # Empty means to query device from database
             deviceid: ""
-
-        kafka_1:
+        kafka-1:
+            role: service
             type: Videostream
             class: apache.kafka
-            Topics:
+            service_port: 9092
+            topics:
                 Producer:
-                    video_ingestion_1:
+                    video-ingestion-1:
                         topic: ingest
                         partition_id: 0
-                    face_recognition_1:
+                        group: group1
+                    face-recognition-1:
                         topic: recognition
                         partition_id: 0
+                        group: group3
                 Consumer:
-                    face_recognition_1:
+                    face-recognition-1:
                         topic: ingest
                         partition_id: 0
+                        group: group2
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
             deviceid: ""
-
-                    
-        video_ingestion_1:
+        video-ingestion-1:
+            role: service
             class: nxp.video_ingestion
-            Source: camera_1
-            Target: kafka_1
-            deviceid: ""
-
-        face_recognition_1:
+            Source: camera-1
+            Target: kafka-1
+            Input:
+                name: VideoSource
+            Output:
+                name: Videostream
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
+            deviceid: 598ffebd40de567c94b5a4b9469822ac.iot.multimedia.imx8.nxp
+        face-recognition-1:
+            role: service
             class: nxp.face_recognition
-            Source: kafka_1
-            Target: kafka_1
-            deviceid: ""
+            Source: kafka-1
+            Target: kafka-1
+            Input:
+                name: Videostream
+            Output:
+                name: Videostream
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
+            deviceid: 35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp
 
