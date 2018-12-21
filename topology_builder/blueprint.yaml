@@ -34,7 +34,7 @@ Solution:
                 arch: arm64
                 os: linux
                 rfs: ubuntu1604
-            deviceid: 35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp
+            deviceid: 93c3dd5ff9b05c6e935325d8400252bf.lsdk.generic.ls2088ardb.nxp
         video-ingestion-1:
             role: service
             class: nxp.video_ingestion
@@ -48,7 +48,7 @@ Solution:
                 arch: arm64
                 os: linux
                 rfs: ubuntu1604
-            deviceid: 598ffebd40de567c94b5a4b9469822ac.iot.multimedia.imx8.nxp
+            deviceid: a514aea576255934994e6794589784eb.iot.multimedia.imx8.nxp
         face-recognition-1:
             role: service
             class: nxp.face_recognition
@@ -62,5 +62,5 @@ Solution:
                 arch: arm64
                 os: linux
                 rfs: ubuntu1604
-            deviceid: 35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp
+            deviceid: ab8dc5794cda54378b80f8152f149ad5.lsdk.generic.ls1046ardb.nxp
 

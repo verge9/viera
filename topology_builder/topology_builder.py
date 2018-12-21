@@ -1,6 +1,7 @@
 import json, yaml, jinja2
 import requests
-import os, re
+import os, re, sys, time
+
 
 def trim_prototype(node, key=None):
     if type(node) != type({}) or node == {}:
@@ -10,15 +11,10 @@ def trim_prototype(node, key=None):
         for k in node:
             trim_prototype(node, k)
     else:
-        #print "---------begin---------"
-        #print "key %s" % key
         if type(node[key]) is not type({}):
             return
         if 'value' in node[key]:
-            #print "there is value in %s" % key
-            #print node
             node[key] = node[key]['value']
-            #print node
             return
         trim_prototype(node[key])
 
@@ -46,54 +42,27 @@ class TopologyBlock(object):
         return yaml.load('\n'.join(new_lines))
             
     def __initialize(self):
-        #self.type = info['type']
         self.template_path = 'nodes/' + self.block_class.replace('.', '/') + '.yaml'
         # used for composer
         block_name = self.block_class.split('.')[-1]
         self.properties['name'] = block_name
         self.properties['id'] = self.id
-        #print self.properties
         if 'Compatability' in self.properties:
             self.hardware = self.properties['Compatability']
         self.role = self.properties['role']
 
     def assignDevice(self, device):
         self.device = device
-        if self.id == 'kafka-1':
-            self.device['local_ip'] = '10.193.20.94'
+        #if self.id == 'kafka-1':
+        #    self.device['local_ip'] = '10.193.20.94'
 
     def render_template(self):
-        #print self.template_path
         path = os.path.dirname(self.template_path)
         fn = os.path.basename(self.template_path)
         loader = jinja2.FileSystemLoader(path)
         env = jinja2.Environment(loader=loader)
         template = env.get_template(fn)
      
-        '''
-        print '========='
-        print self.device
-        print '========='
-        print self.properties
-        print '========='
-        print self.previous
-        print '========='
-        print self.successor
-        print '========='
-        try:
-            str_template = template.render(device=self.device, \
-                                           interface=self.properties, \
-                                           previous=self.previous, \
-                                           successor=self.successor)
-            self.template = yaml.load(str_template).values()[0]
-        except Exception, e:
-            print "Fail to render template %s" % self.template_path
-            print e.message
-            return False
-        print "+++++++++++++++"
-        print dir(self.previous)
-        print "+++++++++++++++"
-        '''
         str_template = template.render(device=self.device, \
                                        interface=self.properties, \
                                        previous=self.previous, \
@@ -101,12 +70,6 @@ class TopologyBlock(object):
         self.template = yaml.load(str_template).values()[0]
         trim_prototype(self.template)
         str_template = yaml.dump(self.template)
-        '''
-        print "========="
-        print str_template
-        print self.template
-        print "========="
-        '''
 
         matches = re.findall('current\.[\w\.]+', str_template)
         #print matches
@@ -122,24 +85,9 @@ class TopologyBlock(object):
             for key in keys:
                 value = value[key]
             # only replace first match
-            '''
-            print '***********************'
-            print "match %s" % m
-            print value
-            print yaml.dump(value)
-            print json.dumps(value)
-            print '***********************'
-            '''
             #str_template = re.sub(m, '"{}"'.format(yaml.dump(value)), str_template, count = 1)
             str_template = re.sub(m, '{}'.format(json.dumps(value)), str_template, count = 1)
         self.template = yaml.load(str_template)
-        '''
-        print "-----------"
-        print str_template
-        print "-----------"
-        print self.template
-        print "------------"
-        '''
         self.template['device'] = self.device
         return True
 
@@ -155,10 +103,23 @@ def get_deploy_point():
     else:
         return json.loads(r.content)['endpoint']
 
-def deploy_service(data):
+def deploy_service(blockid):
+    global topology
+    global so_template
     global ca_cert
     global ca_key
 
+    blockinfo = topology['blocks'][blockid]
+    if blockinfo['role'] != "service" or blockinfo['status'] == 'deployed':
+        return True
+    # Deploy dependencies 
+    for dep in ['Source', 'Target']:
+        if dep in blockinfo:
+            ret = deploy_service(blockinfo[dep])
+            if ret == False:
+                return False
+ 
+    print "Deploying %s..." % blockid
     ca_cert = 'server.pem'
     ca_key = 'server-key.pem'
 
@@ -166,14 +127,37 @@ def deploy_service(data):
     if url is None:
         print "Fail to get deploy endpoint."
         return False
-    payload = data
+    payload = so_template[blockid]
     headers = {'content-type': 'application/json'}
+
     r = requests.post(url, data=json.dumps(payload), headers=headers, \
                       cert=(ca_cert, ca_key), verify=False)
     if r.status_code not in [200, 201]:
         print "Fail to send deployment request."
         #print r.content
         return False
+    print "Waiting for app %s running..." % blockid
+    time.sleep(10)
+    limit = 300
+    i = 0
+    while i < limit:
+        r = requests.get(url + '/' + blockid, headers=headers, \
+                         cert=(ca_cert, ca_key), verify=False)
+        if r.status_code not in [200, 201]:
+            print "Fail to send query for app status."
+        app_query = json.loads(r.content)
+        if app_query['code'] != 0:
+            print "app status error."
+            print app_query['message']
+            return False
+        status = app_query['items'][0]['status']['phase']
+        if status == 'Running':
+            break
+        print "The app {} is {}.".format(blockid, status)
+        time.sleep(1)
+    print "The app %s has been runnning." % blockid
+    blockinfo['status'] = 'deployed'
+    
     return True
 
 # service orchestrator template
@@ -189,11 +173,13 @@ def so_add_service(name, cmd, params, image, repo, version, target):
                            "namespace": "default"}
     containers = []
     envs = []
-    #print params
     if type(params) == type([]):
         for item in params:
-            envs.append({'name':item['name'], 'value':json.dumps(item['value'])})
-    #print envs
+            value = item['value']
+            if type(value) == type({}):
+                # for dict type, need to convert to json string(embraced by "")
+                value = json.dumps(item['value'])
+            envs.append({'name':item['name'], 'value':value})
     containers.append({"args": [cmd],
                       "command": ["/bin/bash", "-c"],
                       "image": "{}/{}:{}".format(repo, image, version),
@@ -220,15 +206,17 @@ def devmgmt_query(url, require):
     if 'code' not in devices or devices['code'] != 0:
         return None
     if 'deviceid' in require:
+        print "matching device %s" % require['deviceid']
         for dev in devices['items']:
             # get required board
             if 'name' in dev and dev['name'] == require['deviceid']:
                 return [dev]
+        # No intent device found
+        return None
     return devices['items']
 
 def query_devices(type, require):
     url = 'http://{}:{}/vg9/lowend/{}'.format(devmgmt_ip, devmgmt_port, type)
-    #print url
     return devmgmt_query(url, require)
 
 def query_boards(require):
@@ -286,7 +274,6 @@ def init_service(block, blockinfo):
         # No device
         if devices == None or devices == []:
             break
-        #print devices
         target = devices[0]
         # Fail to reserve device, need updating
         if not reserve_boards(target['name']):
@@ -301,16 +288,8 @@ def init_service(block, blockinfo):
 
     if block.id == 'kafka_1':
         block.properties['topics'] = blockinfo['topics']
-        '''
-        print '--------------------'
-        print block.properties['topics']
-        print blockinfo['topics']
-        print '--------------------'
-        '''
-
 
     if block.render_template():
-        #print block.template
         docker_info = block.template['dockerapp-compose']
         so_add_service(block.id, docker_info['command'], docker_info['environment'], \
                        docker_info['image'], docker_info['repo'], \
@@ -320,7 +299,6 @@ def init_service(block, blockinfo):
 
 def init_device(block, blockinfo):
     print "init device id %s" % block.id
-    #print block.properties
     if 'deviceid' in blockinfo and blockinfo['deviceid'] != "":
         dev = query_devices(block.properties['name'], require={'deviceid':blockinfo['deviceid']})
     else:
@@ -337,8 +315,6 @@ def init_device(block, blockinfo):
         return True
     else:
         return False
-    #device.set_properties(dev['attr'])
-
 
 def init_block(block_id, blockinfo):
     block = TopologyBlock(block_id, blockinfo)
@@ -359,10 +335,21 @@ def get_global_topology():
     return topology
 
 if __name__ == '__main__':
-    f = open("blueprint.yaml", "r")
+    if len(sys.argv) == 1:
+        bp = "blueprint.yaml"
+    elif len(sys.argv) == 2:
+        bp = sys.argv[1]
+    else:
+        print "Deployment manager usage:"
+        print "%s <blueprint template>" % sys.argv[0]
+        exit(100)
+    if not os.path.isfile(bp):
+        print "Can NOT find blueprint template %s." % bp
+        exit(101)
+
+    f = open(bp, "r")
     bp_yaml = yaml.load(f)
     f.close()
-    #print bp_yaml
     if not 'Solution' in bp_yaml:
         print "Missing Solution in topology. Quit..."
         exit(200)
@@ -387,18 +374,11 @@ if __name__ == '__main__':
     with open('output.json', 'w') as f:
         json.dump(so_template, f, indent=4)
 
-    for service_name in so_template:
-        service = so_template[service_name]
-        '''
-        print "=========deploy %s=========" % service_name
-        print service
-        print "================================"
-        '''
-        ret = deploy_service(service)
-        if ret:
-            print "Succeeded to deploy service %s." % service_name
-        else:
-            print "Fail to deploy servcie %s." % service_name
+    for blockid in solution_node['blocks']:
+        ret = deploy_service(blockid)
+        if ret == False:
+            print "Fail to deploy %s, stop deployment and rollback." % blockid
+            exit(104)
 
     #with open('output.yaml', 'w') as f:
     #    yaml.dump(bp_yaml, f)

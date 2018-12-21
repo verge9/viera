@@ -43,7 +43,11 @@ kafka:
     version: broker
     repo : devops.nxp.com
     environment:
-    command: "cd ~/kafka/kafka_2.11-2.0.0 && bin/kafka-server-start.sh  config/server.properties &"
+    - name: PATH
+      value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/jdk/jdk1.8.0_181/bin
+    - name: JAVA_HOME
+      value: /usr/jdk/jdk1.8.0_181
+    command: "cd ~/kafka/zookeeper-3.4.13 && bin/zkServer.sh start conf/zoo.cfg && sleep 10 && cd ~/kafka/kafka_2.11-2.0.0 && bin/kafka-server-start.sh  config/server.properties &"
   security: 
     service_token: 
     type: string <token or username/password> 
