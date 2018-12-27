@@ -94,7 +94,7 @@ Solution:
 ### Example: Deployment file
 ``` json
 {
-    "videodashboard-vd1": {
+    "face-recognition-1": {
         "kind": "Pod", 
         "spec": {
             "restartPolicy": "Always", 
@@ -109,10 +109,10 @@ Solution:
                     "securityContext": {
                         "privileged": true
                     }, 
-                    "name": "videodashboard-vd1", 
-                    "image": "devops.nxp.com/videodashboard:1.3.2", 
+                    "name": "face-recognition-1", 
+                    "image": "devops.nxp.com/deploy_manage_facerecognize:v1.1", 
                     "args": [
-                        "python WebApp.py"
+                        "cd /root/test_new/ && python facerecognition.py"
                     ], 
                     "command": [
                         "/bin/bash", 
@@ -121,33 +121,26 @@ Solution:
                     "env": [
                         {
                             "name": "SERVICE_PARAMETERS", 
-                            "value": {
-                                "apache.kafka": {
-                                    "topic": "data_send3", 
-                                    "ip": "x.x.x.x", 
-                                    "partition": 0, 
-                                    "port": 9092
-                                }
-                            }
+                            "value": "{\"input\": {\"VideoSource\": {\"username\": null, \"encode\": null, \"StreamID\": null, \"url\": null, \"password\": null, \"Resolution\": null, \"Video format\": null}, \"Videostream\": {\"Broker_IP\": \"xxx.xxx.xxx.xxx\", \"TopicID\": \"ingest\", \"PartitionID\": 0, \"Broker_Port\": 9092, \"Group\": \"group2\"}, \"name\": \"Videostream\", \"Featuredb\": {\"DB_admin_username\": null, \"DB_name\": null, \"DB_address\": null, \"DB_admin_password\": null}}, \"output\": {\"Videostream\": {\"Broker_IP\": \"xxx.xxx.xxx.xxx\", \"TopicID\": \"recognition\", \"PartitionID\": 0, \"Broker_Port\": 9092, \"Group\": \"group3\"}, \"name\": \"Videostream\"}}"
                         }
                     ], 
                     "imagePullPolicy": "IfNotPresent"
                 }
             ], 
             "nodeSelector": {
-                "kubernetes.io/hostname": "35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp"
+                "kubernetes.io/hostname": "ab8dc5794cda54378b80f8152f149ad5.lsdk.generic.ls1046ardb.nxp"
             }
         }, 
         "apiVersion": "v1", 
         "metadata": {
             "labels": {
-                "name": "videodashboard-vd1"
+                "name": "face-recognition-1"
             }, 
             "namespace": "default", 
-            "name": "videodashboard-vd1"
+            "name": "face-recognition-1"
         }
     }, 
-    "facerecognition-fr1": {
+    "video-ingestion-1": {
         "kind": "Pod", 
         "spec": {
             "restartPolicy": "Always", 
@@ -162,10 +155,10 @@ Solution:
                     "securityContext": {
                         "privileged": true
                     }, 
-                    "name": "facerecognition-fr1", 
-                    "image": "devops.nxp.com/facerecognition:1.3.2", 
+                    "name": "video-ingestion-1", 
+                    "image": "devops.nxp.com/deploy_manage_ingestion_facedetect:v1.1", 
                     "args": [
-                        "/bin/facerecognition"
+                        "cd /home/root/ncnn-face-recon-imx8_m2/build/ && ./facedetect"
                     ], 
                     "command": [
                         "/bin/bash", 
@@ -174,43 +167,26 @@ Solution:
                     "env": [
                         {
                             "name": "SERVICE_PARAMETERS", 
-                            "value": {
-                                "source": {
-                                    "apache.kafka": {
-                                        "topic": "data_send2", 
-                                        "ip": "x.x.x.x", 
-                                        "partition": 0, 
-                                        "port": 9092
-                                    }
-                                }, 
-                                "target": {
-                                    "apache.kafka": {
-                                        "topic": "data_send3", 
-                                        "ip": "10.192.208.124", 
-                                        "partition": 0, 
-                                        "port": 9092
-                                    }
-                                }
-                            }
+                            "value": "{\"input\": {\"VideoSource\": {\"username\": \"admin\", \"encode\": \"jpg\", \"StreamID\": \"rtsp\", \"url\": \"rtsp://admin:a12345678@192.168.xxx.xxx//h264/ch1/sub/av_stream\", \"password\": \"a12345678\", \"Resolution\": \"640x480\", \"Video format\": \"H264\"}, \"Videostream\": {\"Broker_IP\": null, \"TopicID\": null, \"PartitionID\": null, \"Broker_Port\": null, \"Group\": null}, \"name\": \"VideoSource\", \"Featuredb\": {\"DB_admin_username\": null, \"DB_name\": null, \"DB_address\": null, \"DB_admin_password\": null}}, \"output\": {\"Videostream\": {\"Broker_IP\": \"xxx.xxx.xxx.xxx\", \"TopicID\": \"ingest\", \"PartitionID\": 0, \"Broker_Port\": 9092, \"Group\": \"group1\"}, \"name\": \"Videostream\"}}"
                         }
                     ], 
                     "imagePullPolicy": "IfNotPresent"
                 }
             ], 
             "nodeSelector": {
-                "kubernetes.io/hostname": "35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp"
+                "kubernetes.io/hostname": "a514aea576255934994e6794589784eb.iot.multimedia.imx8.nxp"
             }
         }, 
         "apiVersion": "v1", 
         "metadata": {
             "labels": {
-                "name": "facerecognition-fr1"
+                "name": "video-ingestion-1"
             }, 
             "namespace": "default", 
-            "name": "facerecognition-fr1"
+            "name": "video-ingestion-1"
         }
     }, 
-    "videoingestion-vi1": {
+    "kafka-1": {
         "kind": "Pod", 
         "spec": {
             "restartPolicy": "Always", 
@@ -225,10 +201,10 @@ Solution:
                     "securityContext": {
                         "privileged": true
                     }, 
-                    "name": "videoingestion-vi1", 
-                    "image": "devops.nxp.com/videoingestion:1.3.2", 
+                    "name": "kafka-1", 
+                    "image": "devops.nxp.com/kafka:broker", 
                     "args": [
-                        "/bin/videoingestion"
+                        "cd ~/kafka/zookeeper-3.4.13 && bin/zkServer.sh start conf/zoo.cfg && sleep 10 && cd ~/kafka/kafka_2.11-2.0.0 && bin/kafka-server-start.sh  config/server.properties &"
                     ], 
                     "command": [
                         "/bin/bash", 
@@ -236,150 +212,28 @@ Solution:
                     ], 
                     "env": [
                         {
-                            "name": "SERVICE_PARAMETERS", 
-                            "value": {
-                                "nxp.camera.ip_camera": {
-                                    "protocol": "rtsp", 
-                                    "pw": "xxxxxxx", 
-                                    "format": "H264", 
-                                    "url": "rtsp://xxxx:xxxxxxx@10.11.10.1/h264/ch1/sub/av_stream", 
-                                    "ip": "10.11.10.1", 
-                                    "appendix": "/h264/ch1/sub/av_stream", 
-                                    "user": "admin", 
-                                    "resolution": "640x480"
-                                }, 
-                                "apache.kafka": {
-                                    "topic": "data_send1", 
-                                    "ip": "10.192.208.124", 
-                                    "partition": 0, 
-                                    "port": 9092
-                                }
-                            }
-                        }
-                    ], 
-                    "imagePullPolicy": "IfNotPresent"
-                }
-            ], 
-            "nodeSelector": {
-                "kubernetes.io/hostname": "35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp"
-            }
-        }, 
-        "apiVersion": "v1", 
-        "metadata": {
-            "labels": {
-                "name": "videoingestion-vi1"
-            }, 
-            "namespace": "default", 
-            "name": "videoingestion-vi1"
-        }
-    }, 
-    "kafka-stream1": {
-        "kind": "Pod", 
-        "spec": {
-            "restartPolicy": "Always", 
-            "hostNetwork": true, 
-            "imagePullSecrets": [
-                {
-                    "name": "secretnxp"
-                }
-            ], 
-            "containers": [
-                {
-                    "securityContext": {
-                        "privileged": true
-                    }, 
-                    "name": "kafka-stream1", 
-                    "image": "devops.nxp.com/kafka:1.3.2", 
-                    "args": [
-                        "/bin/kafka"
-                    ], 
-                    "command": [
-                        "/bin/bash", 
-                        "-c"
-                    ], 
-                    "env": [
+                            "name": "PATH", 
+                            "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/jdk/jdk1.8.0_181/bin"
+                        }, 
                         {
-                            "name": "SERVICE_PARAMETERS", 
-                            "value": ""
+                            "name": "JAVA_HOME", 
+                            "value": "/usr/jdk/jdk1.8.0_181"
                         }
                     ], 
                     "imagePullPolicy": "IfNotPresent"
                 }
             ], 
             "nodeSelector": {
-                "kubernetes.io/hostname": "35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp"
+                "kubernetes.io/hostname": "93c3dd5ff9b05c6e935325d8400252bf.lsdk.generic.ls2088ardb.nxp"
             }
         }, 
         "apiVersion": "v1", 
         "metadata": {
             "labels": {
-                "name": "kafka-stream1"
+                "name": "kafka-1"
             }, 
             "namespace": "default", 
-            "name": "kafka-stream1"
-        }
-    }, 
-    "facedetection-fd1": {
-        "kind": "Pod", 
-        "spec": {
-            "restartPolicy": "Always", 
-            "hostNetwork": true, 
-            "imagePullSecrets": [
-                {
-                    "name": "secretnxp"
-                }
-            ], 
-            "containers": [
-                {
-                    "securityContext": {
-                        "privileged": true
-                    }, 
-                    "name": "facedetection-fd1", 
-                    "image": "devops.nxp.com/facedetect:1.3.2", 
-                    "args": [
-                        "/bin/facedetection"
-                    ], 
-                    "command": [
-                        "/bin/bash", 
-                        "-c"
-                    ], 
-                    "env": [
-                        {
-                            "name": "SERVICE_PARAMETERS", 
-                            "value": {
-                                "source": {
-                                    "apache.kafka": {
-                                        "topic": "data_send1", 
-                                        "ip": "x.x.x.x", 
-                                        "partition": 0, 
-                                        "port": 9092
-                                    }
-                                }, 
-                                "target": {
-                                    "apache.kafka": {
-                                        "topic": "data_send2", 
-                                        "ip": "x.x.x.x", 
-                                        "partition": 0, 
-                                        "port": 9092
-                                    }
-                                }
-                            }
-                        }
-                    ], 
-                    "imagePullPolicy": "IfNotPresent"
-                }
-            ], 
-            "nodeSelector": {
-                "kubernetes.io/hostname": "35d07fcae2d1538ebb5f8972e1ddc523.lsdk.generic.ls1046ardb.nxp"
-            }
-        }, 
-        "apiVersion": "v1", 
-        "metadata": {
-            "labels": {
-                "name": "facedetection-fd1"
-            }, 
-            "namespace": "default", 
-            "name": "facedetection-fd1"
+            "name": "kafka-1"
         }
     }
 }
