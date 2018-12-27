@@ -4,10 +4,10 @@
 ## Table of contents
 * [Introduction](#introduction)
 * [Objectives](#objectives)
-* [Example: Solution Blueprint](#example-solution-blueprint)
-* [Example: Deployment file](#example-deployment-file)
 * [Architecture](#architecture)
 * [How to write blueprint](#blueprint)
+* [Example: Solution Blueprint](#example-home-surveillance-system-blueprint)
+* [Example: Deployment file](#example-deployment-file-for-home-surveillance-system)
 
 ### Introduction
 
@@ -22,7 +22,7 @@ Deployment Manager will help customer to deploy end-to-end solution on Verge9. T
 - Downloadable and runnable locally as a separate module 
 - Deployable as OpenFaaS function on Edge Devices (REST API interface)
 
-### Example: Solution Blueprint
+### Example: Home Surveillance System Blueprint
 
 ```yaml
 Solution:
@@ -91,7 +91,7 @@ Solution:
                 rfs: ubuntu1604
             deviceid: ab8dc5794cda54378b80f8152f149ad5.lsdk.generic.ls1046ardb.nxp
 ```
-### Example: Deployment file
+### Example: Deployment file for Home Surveillance System
 ``` json
 {
     "face-recognition-1": {
