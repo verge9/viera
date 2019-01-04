@@ -5,6 +5,10 @@ face_recognition:
   serviceid: unique_id
   category: "" 
   role: service
+  ExternalFunction:
+    FeatureDB:
+      type: RestAPI
+      value: {{ interface.FeatureDB }}
   Input:   #define service input and it will be used to check link type
     name:
       type: option
@@ -60,6 +64,9 @@ face_recognition:
       value:
         input: current.Input
         output: current.Output
+        featureDB_IP: current.ExternalFunction.FeatureDB.service_ip
+        featureDB_Port: current.ExternalFunction.FeatureDB.service_port
+        featureDB_URI: current.ExternalFunction.FeatureDB.uris
     command: "cd /root/test_new/ && python facerecognition.py"
   security: 
     service_token: 

@@ -12,6 +12,7 @@ video_ingestion:
       - VideoSource
       - Featuredb
       - Videostream
+      - RestAPI
       value: {{ interface.Input.name }}
     VideoSource:
       StreamID: {{ previous.protocol if interface.Input.name == "VideoSource" }}
@@ -32,6 +33,10 @@ video_ingestion:
       TopicID: {{ previous["topics"]["Consumer"][interface.id]["topic"] if interface.Input.name == "Videostream" }}
       PartitionID: {{ previous["topics"]["Consumer"][interface.id]["partition_id"] if interface.Input.name == "Videostream" }}
       Group: {{ previous["topics"]["Consumer"][interface.id]["group"] if interface.Input.name == "Videostream" }}
+    RestAPI:
+      ip: {{ previous.service_ip if interface.Input.name == "RestAPI" }}
+      port: {{ previous.service_port if interface.Input.name == "RestAPI" }}
+      uris: {{ previous.uris if interface.Input.name == "RestAPI" }}
   Output:
     name:
       type: option

@@ -1,0 +1,70 @@
+Solution:
+    name: smart_home
+    id: a_random_alphabeit_string_generated_by_system
+    version: v1
+    blocks:
+        camera-1:
+            role: RestAPI
+            type: RestAPI
+            class: nxp.restapi
+            service_port: 5000
+            uris:
+                addPerson: /featuredb/addPerson
+                delPerson: /featuredb/delPerson
+                findPerson: /featuredb/findPerson
+            # Empty means to query device from database
+            deviceid: ""
+        kafka-1:
+            role: service
+            type: Videostream
+            class: apache.kafka
+            service_port: 9092
+            topics:
+                Producer:
+                    video-ingestion-1:
+                        topic: ingest
+                        partition_id: 0
+                        group: group1
+                    face-recognition-1:
+                        topic: recognition
+                        partition_id: 0
+                        group: group3
+                Consumer:
+                    face-recognition-1:
+                        topic: ingest
+                        partition_id: 0
+                        group: group2
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
+            deviceid: 93c3dd5ff9b05c6e935325d8400252bf.lsdk.generic.ls2088ardb.nxp
+        video-ingestion-1:
+            role: service
+            class: nxp.video_ingestion
+            Source: camera-1
+            Target: kafka-1
+            Input:
+                name: RestAPI
+            Output:
+                name: Videostream
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
+            deviceid: a514aea576255934994e6794589784eb.iot.multimedia.imx8.nxp
+        face-recognition-1:
+            role: service
+            class: nxp.face_recognition
+            Source: kafka-1
+            Target: kafka-1
+            Input:
+                name: Videostream
+            Output:
+                name: Videostream
+            Compatability:
+                arch: arm64
+                os: linux
+                rfs: ubuntu1604
+            deviceid: ab8dc5794cda54378b80f8152f149ad5.lsdk.generic.ls1046ardb.nxp
+
