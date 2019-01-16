@@ -1,0 +1,35 @@
+function:
+  description: face recognition feature database
+  category: 
+  role: RestAPI
+  service_ip:
+    type: string
+    value: {{ interface.service_ip }}
+  service_port:
+    type: integer
+    value: {{ interface.service_port }}
+    default: 5000
+  uris:
+    type: dict
+    key:
+      type: string
+    properties:
+      uri:
+        type: string
+    value: {{ interface.uris }}
+    # addPerson: {{ /featuredb/addPerson }}
+    # delPerson: {{ /featuredb/delPerson }}
+    # findPerson: {{ /featuredb/findPerson }}
+  Compatability:
+    arch: arm64
+    os: linux
+    rfs: ubuntu1604
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: featuredb
+    container_name: featuredb
+    hostname: featuredb
+    version: v1.0
+    repo : devops.nxp.com
+    environment:
+    command: "cd ~/featuredb/ && ./startdb"
+
