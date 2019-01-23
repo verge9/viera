@@ -6,66 +6,54 @@ video_ingestion:
   category: IIoT 
   role: service
   Input:   #define service input and it will be used to check link type
-    name:
-      type: option
-      choice:
-      - VideoSource
-      - Featuredb
-      - Videostream
-      - RestAPI
-      value: {{ interface.Input.name }}
     VideoSource:
-      StreamID: {{ previous.protocol if interface.Input.name == "VideoSource" }}
-      Resolution: {{ previous.resolution if interface.Input.name == "VideoSource" }}
-      Video format: {{ previous.format if interface.Input.name == "VideoSource" }}
-      encode: {{ previous.encode if interface.Input.name == "VideoSource" }}
-      username: {{ previous.username if interface.Input.name == "VideoSource" }}
-      password: {{ previous.password if interface.Input.name == "VideoSource" }}
-      url: {{ previous.url if interface.Input.name == "VideoSource" }}
+      StreamID: {{ previous[0].protocol if previous[0].type == "VideoSource" }}
+      Resolution: {{ previous[0].resolution if interface.Input.name == "VideoSource" }}
+      Video format: {{ previous[0].format if interface.Input.name == "VideoSource" }}
+      encode: {{ previous[0].encode if interface.Input.name == "VideoSource" }}
+      username: {{ previous[0].username if interface.Input.name == "VideoSource" }}
+      password: {{ previous[0].password if interface.Input.name == "VideoSource" }}
+      url: {% for block in previous %}{{block.url if block.type == "VideoSource" }} {% endfor %}
+      count: {% set count = [] -%}{% for block in previous -%}{% if block.type == "VideoSource" %}{% if count.append(block) -%}{% endif %}{% endif %}{% endfor %}{{ count|length }}
     Featuredb:
-      DB_name: {{ previous.name if interface.Input.name == "Featuredb" }}
-      DB_address: {{ previous.address if interface.Input.name == "Featuredb" }}
-      DB_admin_username: {{ previous.admin_username if interface.Input.name == "Featuredb" }}
-      DB_admin_password: {{ previous.admin_password if interface.Input.name == "Featuredb" }}
+      DB_name: {{ previous[0].name if interface.Input.name == "Featuredb" }}
+      DB_address: {{ previous[0].address if interface.Input.name == "Featuredb" }}
+      DB_admin_username: {{ previous[0].admin_username if interface.Input.name == "Featuredb" }}
+      DB_admin_password: {{ previous[0].admin_password if interface.Input.name == "Featuredb" }}
     Videostream:
-      Broker_IP: {{ previous.device.local_ip if interface.Input.name == "Videostream" }}
-      Broker_Port: {{ previous.service_port if interface.Input.name == "Videostream" }}
-      TopicID: {{ previous["topics"]["Consumer"][interface.id]["topic"] if interface.Input.name == "Videostream" }}
-      PartitionID: {{ previous["topics"]["Consumer"][interface.id]["partition_id"] if interface.Input.name == "Videostream" }}
-      Group: {{ previous["topics"]["Consumer"][interface.id]["group"] if interface.Input.name == "Videostream" }}
+      Broker_IP: {{ previous[0].device.local_ip if interface.Input.name == "Videostream" }}
+      Broker_Port: {{ previous[0].service_port if interface.Input.name == "Videostream" }}
+      TopicID: {{ interface["Input"]["Videostream"]["TopicID"] if interface.Input.name == "Videostream" }}
+      PartitionID: {{ interface["Input"]["Videostream"]["PartitionID"] if interface.Input.name == "Videostream" }}
+      Group: {{ interface["Input"]["Videostream"]["Group"] if interface.Input.name == "Videostream" }}
     RestAPI:
-      ip: {{ previous.service_ip if interface.Input.name == "RestAPI" }}
-      port: {{ previous.service_port if interface.Input.name == "RestAPI" }}
-      uris: {{ previous.uris if interface.Input.name == "RestAPI" }}
+      ip: {{ previous[0].service_ip if interface.Input.name == "RestAPI" }}
+      port: {{ previous[0].service_port if interface.Input.name == "RestAPI" }}
+      uris: {{ previous[0].uris if interface.Input.name == "RestAPI" }}
   Output:
-    name:
-      type: option
-      choice:
-      - Videostream
-      - TSN port
-      value: {{ interface.Output.name }}
     Videostream:
-      Broker_IP: {{ successor.device.local_ip if interface.Output.name == "Videostream" }}
-      Broker_Port: {{ successor.service_port if interface.Output.name == "Videostream" }}
-      TopicID: {{ successor["topics"]["Producer"][interface.id]["topic"] if interface.Output.name == "Videostream" }}
-      PartitionID: {{ successor["topics"]["Producer"][interface.id]["partition_id"] if interface.Output.name == "Videostream" }}
-      Group: {{ successor["topics"]["Producer"][interface.id]["group"] if interface.Output.name == "Videostream" }}
+      Broker_IP: {{ successor[0].device.local_ip if interface.Output.name == "Videostream" }}
+      Broker_Port: {{ successor[0].service_port if interface.Output.name == "Videostream" }}
+      TopicNum: {{ (previous|length) if interface.Output.name == "Videostream" }}
+      TopicID: {{ interface["Output"]["Videostream"]["TopicID"] if interface.Output.name == "Videostream" }}
+      PartitionID: {{ interface["Output"]["Videostream"]["PartitionID"] if interface.Output.name == "Videostream" }}
+      Group: {{ interface["Output"]["Videostream"]["Group"] if interface.Output.name == "Videostream" }}
   Compatability:
     arch: arm64
     os: linux
     rfs: ubuntu1604
   dockerapp-compose: # reuse docker compose template, below is a compose example
-    image: deploy_manage_ingestion_facedetect
+    image: deploy_manager_ubuntu
     container_name: video_ingestion
     hostname: video_ingestion
-    version: v1.1
+    version: v1.9
     repo : devops.nxp.com
     environment:
     - name: SERVICE_PARAMETERS
       value:
         input: current.Input
         output: current.Output
-    command: "cd /home/root/ncnn-face-recon-imx8_m2/build/ && ./facedetect"
+    command: "cd /root/video_ingestion/build && ./run_video_ingetion.sh"
   security: 
       service_token: 
       type: string <token or username/password> 

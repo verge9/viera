@@ -18,24 +18,19 @@ face_recognition:
       - Videostream
       value: {{ interface.Input.name }}
     VideoSource:
-      StreamID: {{ previous.protocol if interface.Input.name == "VideoSource" }}
-      Resolution: {{ previous.resolution if interface.Input.name == "VideoSource" }}
-      Video format: {{ previous.format if interface.Input.name == "VideoSource" }}
-      encode: {{ previous.encode if interface.Input.name == "VideoSource" }}
-      username: {{ previous.username if interface.Input.name == "VideoSource" }}
-      password: {{ previous.password if interface.Input.name == "VideoSource" }}
-      url: {{ previous.url if interface.Input.name == "VideoSource" }}
-    Featuredb:
-      DB_name: {{ previous.name if interface.Input.name == "Featuredb" }}
-      DB_address: {{ previous.address if interface.Input.name == "Featuredb" }}
-      DB_admin_username: {{ previous.admin_username if interface.Input.name == "Featuredb" }}
-      DB_admin_password: {{ previous.admin_password if interface.Input.name == "Featuredb" }}
+      StreamID: {{ previous[0].protocol if interface.Input.name == "VideoSource" }}
+      Resolution: {{ previous[0].resolution if interface.Input.name == "VideoSource" }}
+      Video format: {{ previous[0].format if interface.Input.name == "VideoSource" }}
+      encode: {{ previous[0].encode if interface.Input.name == "VideoSource" }}
+      username: {{ previous[0].username if interface.Input.name == "VideoSource" }}
+      password: {{ previous[0].password if interface.Input.name == "VideoSource" }}
+      url: {{ previous[0].url if interface.Input.name == "VideoSource" }}
     Videostream:
-      Broker_IP: {{ previous.device.local_ip if interface.Input.name == "Videostream" }}
-      Broker_Port: {{ previous.service_port if interface.Input.name == "Videostream" }}
-      TopicID: {{ previous["topics"]["Consumer"][interface.id]["topic"] if interface.Input.name == "Videostream" }}
-      PartitionID: {{ previous["topics"]["Consumer"][interface.id]["partition_id"] if interface.Input.name == "Videostream" }}
-      Group: {{ previous["topics"]["Consumer"][interface.id]["group"] if interface.Input.name == "Videostream" }}
+      Broker_IP: {% for block in previous %}{{block.device.local_ip if block.type == "Videostream" }} {% endfor %}
+      Broker_Port: {% for block in previous %}{{block.service_port if block.type == "Videostream" }} {% endfor %}
+      TopicID: {{ interface["Input"]["Videostream"]["TopicID"] }}
+      PartitionID: {{ interface["Input"]["Videostream"]["PartitionID"] if interface.Input.name == "Videostream" }}
+      Group: {{ interface["Input"]["Videostream"]["Group"] if interface.Input.name == "Videostream" }}
   Output:
     name:
       type: option
@@ -44,30 +39,39 @@ face_recognition:
       - TSN port
       value: {{ interface.Output.name }}
     Videostream:
-      Broker_IP: {{ successor.device.local_ip if interface.Output.name == "Videostream" }}
-      Broker_Port: {{ successor.service_port if interface.Output.name == "Videostream" }}
-      TopicID: {{ successor["topics"]["Producer"][interface.id]["topic"] if interface.Output.name == "Videostream" }}
-      PartitionID: {{ successor["topics"]["Producer"][interface.id]["partition_id"] if interface.Output.name == "Videostream" }}
-      Group: {{ previous["topics"]["Producer"][interface.id]["group"] if interface.Input.name == "Videostream" }}
+      Broker_IP: {{ successor[0].device.local_ip if interface.Output.name == "Videostream" }}
+      Broker_Port: {{ successor[0].service_port if interface.Output.name == "Videostream" }}
+      TopicID: {{ interface["Output"]["Videostream"]["TopicID"] }}
+      PartitionID: {{ interface["Output"]["Videostream"]["PartitionID"] if interface.Input.name == "Videostream" }}
+      Group: {{ interface["Output"]["Videostream"]["Group"] if interface.Input.name == "Videostream" }}
+      TopicNum: 4
+  Featuredb:
+    DB_name: dummy
+    DB_address: {% for block in previous %}{{block.device.local_ip if block.type == "FeatureDB" }} {% endfor %}
+    Port: {% for block in previous %}{{block.service_port if block.type == "FeatureDB" }} {% endfor %}
+    DB_admin_username: dummy
+    DB_admin_password: dummy
+    count: {% set count = [] -%}{% for block in previous -%}{% if block.type == "FeatureDB" %}{% if count.append(block) -%}{% endif %}{% endif %}{% endfor %}{{ count|length }}
   Compatability:
     arch: arm64
     os: linux
     rfs: ubuntu1604
   dockerapp-compose: # reuse docker compose template, below is a compose example
-    image: deploy_manage_facerecognize
+    image: deploy_manager_ubuntu
     container_name: face_recognition
     hostname: face_recognition
-    version: v1.1
+    version: v1.9
     repo : devops.nxp.com
     environment:
     - name: SERVICE_PARAMETERS
       value:
         input: current.Input
         output: current.Output
-        featureDB_IP: current.ExternalFunction.FeatureDB.service_ip
-        featureDB_Port: current.ExternalFunction.FeatureDB.service_port
-        featureDB_URI: current.ExternalFunction.FeatureDB.uris
-    command: "cd /root/test_new/ && python facerecognition.py"
+        Featuredb: current.Featuredb
+        #featureDB_IP: current.ExternalFunction.FeatureDB.service_ip
+        #featureDB_Port: current.ExternalFunction.FeatureDB.service_port
+        #featureDB_URI: current.ExternalFunction.FeatureDB.uris
+    command: "cd /root/recognization && ./run_facerecog.sh"
   security: 
     service_token: 
     type: string <token or username/password> 

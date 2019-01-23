@@ -1,8 +1,9 @@
 kafka:
   description: "data streamer"
   serviceid: this_is_allocated_id_for_this_service
-  category: VideoStream
+  category: Videostream
   role: service
+  type: Videostream
   service_port:
     type: integer
     value: {{ interface.service_port }}
@@ -19,7 +20,6 @@ kafka:
           type: integer
         group:
           type: string
-      value: {{ interface.topics.Producer }}
     Consumer: 
       type: dict
       key:
@@ -31,7 +31,6 @@ kafka:
           type: integer
         group:
           type: string
-      value: {{ interface.topics.Consumer }}
   Compatability:
     arch: arm64
     os: linux

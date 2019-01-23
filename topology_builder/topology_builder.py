@@ -24,8 +24,8 @@ class TopologyBlock(object):
         self.block_class = block_interface['class']
         #self.attribute = None
         self.template = None
-        self.previous = None
-        self.successor = None
+        self.previous = []
+        self.successor = []
         self.device = None
         self.hardware = None
         self.properties = block_interface
@@ -60,7 +60,7 @@ class TopologyBlock(object):
         path = os.path.dirname(self.template_path)
         fn = os.path.basename(self.template_path)
         loader = jinja2.FileSystemLoader(path)
-        env = jinja2.Environment(loader=loader)
+        env = jinja2.Environment(loader=loader, extensions=['jinja2.ext.loopcontrols'])
         template = env.get_template(fn)
      
         str_template = template.render(device=self.device, \
@@ -92,7 +92,7 @@ class TopologyBlock(object):
         return True
 
 
-devmgmt_ip = '10.192.208.133'
+devmgmt_ip = '10.192.208.196'
 devmgmt_port = 5000
 
 def get_deploy_point():
@@ -112,12 +112,15 @@ def deploy_service(blockid):
     blockinfo = topology['blocks'][blockid]
     if blockinfo['role'] != "service" or blockinfo['status'] == 'deployed':
         return True
+    print "==== Start deploying blockid ===="
+    print "==== Deploy dependencies  ===="
     # Deploy dependencies 
     for dep in ['Source', 'Target']:
         if dep in blockinfo:
-            ret = deploy_service(blockinfo[dep])
-            if ret == False:
-                return False
+            for blocks in blockinfo[dep]:
+                ret = deploy_service(blocks['id'])
+                if ret == False:
+                    return False
  
     print "Deploying %s..." % blockid
     ca_cert = 'server.pem'
@@ -211,6 +214,8 @@ def devmgmt_query(url, require):
             # get required board
             if 'name' in dev and dev['name'] == require['deviceid']:
                 return [dev]
+            elif 'id' in dev and dev['id'] == require['deviceid']:
+                return [dev]
         # No intent device found
         return None
     return devices['items']
@@ -231,6 +236,7 @@ def load_template_by_class(class_name):
 
 def find_block(block_id):
     topology = get_global_topology()
+    print block_id
     if not block_id in topology['blocks']:
         return None
     return topology['blocks'][block_id]
@@ -249,22 +255,35 @@ def find_and_init_block(block_id):
         blockinfo['instance'] = block
     return blockinfo
 
+def find_and_init_all_block(blockid_list):
+    blockinfo_list = []
+    for blockid in blockid_list:
+        blockinfo = find_and_init_block(blockid)
+        if blockinfo == None:
+            print "Fail to init dependency block %s." % blockid
+            return None
+        blockinfo_list.append(blockinfo)
+    return blockinfo_list
+        
 def init_service(block, blockinfo):
     print "init service id %s" % block.id
-    depend_blocks = {}
     for prop in ['Source', 'Target']:
         if not prop in blockinfo:
             continue
-        dep_block_id = blockinfo[prop]
-        dep_block = find_and_init_block(dep_block_id)
-        if dep_block == None:
+        dep_blockid_list = []
+        for b in blockinfo[prop]:
+            dep_blockid_list.append(b['id'])
+        dep_block_list = find_and_init_all_block(dep_blockid_list)
+        if dep_block_list == None:
             print "Fail to init dependency."
             return False
-        depend_blocks[prop] = dep_block
-        if prop == 'Source':
-            block.previous = dep_block['instance'].template
-        if prop == 'Target':
-            block.successor = dep_block['instance'].template
+        for dep_block in dep_block_list:
+            if prop == 'Source':
+                if block.id == "train":
+                    print dep_block['instance'].template
+                block.previous.append(dep_block['instance'].template)
+            if prop == 'Target':
+                block.successor.append(dep_block['instance'].template)
 
     while True:
         if 'deviceid' in blockinfo and blockinfo['deviceid'] != "":
@@ -286,8 +305,8 @@ def init_service(block, blockinfo):
     block.assignDevice(target)
     blockinfo['status'] = 'init'
 
-    if block.id == 'kafka_1':
-        block.properties['topics'] = blockinfo['topics']
+    #if block.id == 'kafka_1':
+    #    block.properties['topics'] = blockinfo['topics']
 
     if block.render_template():
         docker_info = block.template['dockerapp-compose']
@@ -322,6 +341,8 @@ def init_block(block_id, blockinfo):
         ret = init_service(block, blockinfo)
     elif block.role == 'device':
         ret = init_device(block, blockinfo)
+    else:
+        raise Exception("Unsupported block %s role %s." % (block.id, block.role))
     return block if ret == True else None
 
 def set_global_topology(topo):

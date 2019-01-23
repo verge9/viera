@@ -1,7 +1,7 @@
 function:
   description: face recognition feature database
   category: 
-  role: RestAPI
+  type: FeatureDB
   service_ip:
     type: string
     value: {{ interface.service_ip }}
@@ -17,19 +17,16 @@ function:
       uri:
         type: string
     value: {{ interface.uris }}
-    # addPerson: {{ /featuredb/addPerson }}
-    # delPerson: {{ /featuredb/delPerson }}
-    # findPerson: {{ /featuredb/findPerson }}
   Compatability:
     arch: arm64
     os: linux
     rfs: ubuntu1604
   dockerapp-compose: # reuse docker compose template, below is a compose example
-    image: featuredb
+    image: deploy_manager_ubuntu
     container_name: featuredb
     hostname: featuredb
-    version: v1.0
+    version: v1.9
     repo : devops.nxp.com
     environment:
-    command: "cd ~/featuredb/ && ./startdb"
+    command: "cd /root/featureDB && python main.py"
 

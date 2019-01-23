@@ -3,6 +3,7 @@ ipcamera:
   description: specification for ip camera
   category: <EdgeIntelligence or IIoT or SmartHome>
   role: device
+  type: VideoSource
   protocol: {{ device.attr.protocol }}
   resolution: {{ device.attr.resolution }}
   format: {{ device.attr.format }}
