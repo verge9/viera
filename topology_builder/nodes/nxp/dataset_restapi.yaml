@@ -1,0 +1,35 @@
+dataset:
+  description: "Dataset service that upload and store the image files from users
+                Input: None
+                Output: <ImageSentMessage>"
+  serviceid: unique_id
+  category: "" 
+  role: service
+  type: RestAPI
+  service_port: 15000
+  Output:
+    ImageSentMessage:
+      Broker_IP: {{ successor[0].device.local_ip }}
+      Broker_Port: {{ successor[0].service_port }}
+      TopicID: {{ successor[0]["topics"]["Producer"][interface.id]["topic"] }}
+      PartitionID: {{ successor[0]["topics"]["Producer"][interface.id]["partition_id"] }}
+  uris:
+    dataserver: /tmp/dataset.tgz
+  Compatability:
+    arch: x86
+    os: linux
+    rfs: ubuntu1804
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: building-blocks-dataandtrain
+    container_name: dataset
+    hostname: dataset
+    version: v1.2
+    repo : devops.nxp.com
+    environment:
+    - name: SERVICE_PARAMETERS
+      value:
+        output: current.Output
+    command: "cd /root/bl/ai-building-blocks/dataset/ && python3 upload.py"
+  security: 
+    service_token: 
+    type: string <token or username/password> 

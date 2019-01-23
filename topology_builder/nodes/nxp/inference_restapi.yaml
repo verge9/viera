@@ -1,0 +1,37 @@
+Inference:
+  description: "Inference service that to predict the test images using the model from auto training service
+                Input: <TrainFinishedMessage>
+                Output: None"
+  serviceid: unique_id
+  category: "" 
+  role: service
+  Input:
+    TrainFinishedMessage:
+      Broker_IP: {% for block in previous %}{{block.device.local_ip if block.type == "Videostream" }} {% endfor %}
+      Broker_Port: {% for block in previous %}{{block.service_port if block.type == "Videostream" }} {% endfor %}
+      TopicID: {% for block in previous %}{{block["topics"]["Consumer"][interface.id]["topic"] if block.type == "Videostream" }} {% endfor %}
+      PartitionID: {% for block in previous %}{{block["topics"]["Consumer"][interface.id]["partition_id"] if block.type == "Videostream" }} {% endfor %}
+      count: {% set count = [] -%}{% for block in previous -%}{% if block.type == "Videostream" %}{% if count.append(block) -%}{% endif %}{% endif %}{% endfor %}{{ count|length }}
+    RestAPI:
+      IP: {% for block in previous %}{{block.device.local_ip if block.type == "RestAPI" }} {% endfor %}
+      Port: {% for block in previous %}{{block.service_port if block.type == "RestAPI" }} {% endfor %}
+      uris: {% for block in previous %}{{block.uris if block.type == "RestAPI" }} {% endfor %}
+      count: {% set count = [] -%}{% for block in previous -%}{% if block.type == "RestAPI" %}{% if count.append(block) -%}{% endif %}{% endif %}{% endfor %}{{ count|length }}
+  Compatability:
+    arch: arm64
+    os: linux
+    rfs: ubuntu1804
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: building-blocks-inference
+    container_name: inference
+    hostname: inference
+    version: v1.1
+    repo : devops.nxp.com
+    environment:
+    - name: SERVICE_PARAMETERS
+      value:
+        input: current.Input
+    command: "cd /root/bl/ai-building-blocks/inference/ && python main.py"
+  security: 
+    service_token: 
+    type: string <token or username/password> 

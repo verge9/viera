@@ -1,0 +1,39 @@
+video_ingestion:
+  description: "Face ingestion service that streamlizes video frames from IP Camera or stream database Kafka
+               Input: <VideoSource/Featuredb/Videostream>
+               Output: <Videostream>"
+  serviceid: system_wide_unique_id
+  category: IIoT 
+  role: service
+  Input:
+    VideoSource:
+      StreamID: {{ previous[0].protocol }}
+      Resolution: {{ previous[0].resolution }}
+      Video format: {{ previous[0].format }}
+      encode: {{ previous[0].encode }}
+      username: {{ previous[0].username }}
+      password: {{ previous[0].password }}
+      url: {{ previous[0].url }}
+  FeatureDB:
+    DB_address: {{ successor[0].device.local_ip }}
+    Port: {{ successor[0].service_port }}
+  Compatability:
+    arch: arm64
+    os: linux
+    rfs: ubuntu1604
+  dockerapp-compose: # reuse docker compose template, below is a compose example
+    image: deploy_manager_ubuntu
+    container_name: face_learning
+    hostname: face_learning
+    version: v1.9
+    repo : devops.nxp.com
+    environment:
+    - name: SERVICE_PARAMETERS
+      value:
+        input: current.Input
+        Featuredb: current.FeatureDB
+    command: "cd /root/features_learning  && ./run.sh"
+  security: 
+      service_token: 
+      type: string <token or username/password> 
+
